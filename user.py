@@ -5,6 +5,8 @@ class Pessoa():
         self.cpf = cpf
         self.data_nascimento = data_nascimento
         self.salario = salario
+        self.id = None
 
-
-
+    def alterar_salario(self, novo_salario):
+        self.salario = novo_salario
+        return novo_salario
