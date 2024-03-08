@@ -1,7 +1,10 @@
 class Pessoa():
 
     def __init__(self, nome, cpf, data_nascimento, salario):
-        pass
+        self.nome = nome
+        self.cpf = cpf
+        self.data_nascimento = data_nascimento
+        self.salario = salario
 
-    
+
 
