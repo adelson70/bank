@@ -23,8 +23,12 @@ CREATE TABLE IF NOT EXISTS pessoa(
     cursor_cc.execute("""
 CREATE TABLE IF NOT EXISTS conta(
                       id INTEGER PRIMARY KEY,
-
-                      FOREIGN KEY (id) REFERENCES pessoa(id) 
+                      cpf VARCHAR(11),
+                      saldo DECIMAL,
+                      cc VARCHAR(4),
+                      senha VARCHAR(8),
+                      FOREIGN KEY (id) REFERENCES pessoa(id),
+                      FOREIGN KEY (cpf) REFERENCES pessoa(cpf)
 )
 """)
     conexao_cc.commit()
