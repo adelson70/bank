@@ -2,6 +2,15 @@
 # from user import Pessoa
 # from bank_account import Account
 import sqlite3
+from os import system as sys
+from time import sleep
+
+def esperar(tempo=3):
+    sleep(tempo)
+
+def limpar_console():
+    sys('cls')
+limpar_console()
 
 def conexao_banco():
     conexao = sqlite3.connect('bank.db')
@@ -54,6 +63,10 @@ def criar_usuario():
     
     conexao.commit()
 
+    print(f'CPF: {cpf} vinculado ao banco com sucesso!')
+    esperar()
+    limpar_console()
+
 # FUNÇÃO PARA CRIAR CONTA
 def criar_conta():
     cpf = input('Digite o CPF cadastrado: ')
@@ -74,6 +87,71 @@ def criar_conta():
             
         conexao.commit()
 
-    except:
-        print('CPF não cadastrado no banco!')
+        print(f'CPF: {cpf} vinculado a conta: {cc}')
+        esperar()
+        limpar_console()
 
+    except:
+        limpar_console()
+        print('CPF não cadastrado no banco!')
+        esperar()
+
+def depositar():
+    ...
+
+def sacar():
+    ...
+
+def acessar_conta():
+    id = input('Digite o ID da sua conta: ')
+    cpf = input('Digite o CPF vinculado a conta: ')
+    senha = input('Digite a senha da sua conta: ')
+
+    conexao, cursor = conexao_banco()
+    try:
+        cursor.execute("""SELECT pessoa.nome, pessoa.salario, conta.cpf, conta.saldo, conta.cc 
+                       FROM conta
+                       JOIN pessoa ON conta.id = pessoa.id 
+                       WHERE conta.id=? AND conta.cpf=? AND conta.senha=?""",(id, cpf, senha))
+        result = cursor.fetchall()[0]
+
+        nome_usuario, salario_usuario, cpf_usuario, saldo_usuario, cc_usuario = result
+
+        limpar_console()
+        print(f"Bem vindo {nome_usuario.title()}")
+
+    except:
+        limpar_console()
+        print('Conta não encontrada!')
+        esperar()
+        limpar_console()
+
+def main():
+    while True:
+        limpar_console()
+        msg = """
+    [1] - Acessar Conta
+    [2] - Cadastrar CPF
+    [3] - Criar Conta
+    [0] - Sair
+
+    Digite: """
+
+        opcoes = ['1','2','3','0']
+
+        opcao = input(msg)
+
+        if opcao in opcoes:
+            if opcao == '0':
+                break
+
+            elif opcao == '1':
+                acessar_conta()
+
+            elif opcao == '2':
+                criar_usuario()
+
+            elif opcao == '3':
+                criar_conta()
+
+main()
