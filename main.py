@@ -35,27 +35,3 @@ CREATE TABLE IF NOT EXISTS conta(
     saida = (conexao, cursor)
 
     return saida
-
-def carregar_usuario(cpf):
-    _, cursor = conexao_banco()
-
-    cursor.execute('SELECT * FROM pessoa WHERE cpf=?', (cpf,))
-    result = cursor.fetchone()
-
-    if result:
-        return Pessoa(*result)
-    else:
-        print('Não encontrado!')
-        return 0
-
-def carregar_conta(cc, cpf, senha):
-    _, cursor = conexao_banco()
-
-    cursor.execute('SELECT * FROM conta WHERE cc=? AND cpf=? AND senha=?',(cc, cpf, senha,))
-    result = cursor.fetchone()
-
-    if result:
-        return Account(*result)
-    else:
-        print('Conta não encontrada')
-        return 0
