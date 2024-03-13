@@ -4,12 +4,10 @@ from bank_account import Account
 import sqlite3
 
 def conexao():
-    conexao_pessoa = sqlite3.connect('pessoa_bank.db')
-    conexao_cc = sqlite3.connect('conta_bank.db')
-    cursor_pessoa = conexao_pessoa.cursor()
-    cursor_cc = conexao_cc.cursor()
+    conexao = sqlite3.connect('bank.db')
+    cursor = conexao.cursor()
 
-    cursor_pessoa.execute("""
+    cursor.execute("""
 CREATE TABLE IF NOT EXISTS pessoa(
                           id INTEGER PRIMARY KEY AUTOINCREMENT,
                           nome VARCHAR(50),
@@ -18,9 +16,9 @@ CREATE TABLE IF NOT EXISTS pessoa(
                           salario DECIMAL                          
 )
 """)
-    conexao_pessoa.commit()
+    conexao.commit()
 
-    cursor_cc.execute("""
+    cursor.execute("""
 CREATE TABLE IF NOT EXISTS conta(
                       id INTEGER PRIMARY KEY,
                       cpf VARCHAR(11),
@@ -31,6 +29,6 @@ CREATE TABLE IF NOT EXISTS conta(
                       FOREIGN KEY (cpf) REFERENCES pessoa(cpf)
 )
 """)
-    conexao_cc.commit()
+    conexao.commit()
 
 conexao()
