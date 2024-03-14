@@ -154,7 +154,8 @@ def sacar(cpf, saldo_atual):
         print('Digite apenas números!')
         esperar()
 
-def transferir():
+# FUNÇÃO PARA TRANSFERIR
+def transferir(cpf_envia, saldo_envia):
     ...
 
 # FUNÇÃO PARA ACESSAR A CONTA
@@ -196,7 +197,7 @@ Digite: """)
             elif opcao == '1':
                 depositar(cpf_usuario, saldo_usuario)
             elif opcao == '2':
-                transferir()
+                transferir(cpf_usuario, saldo_usuario)
             elif opcao == '3':
                 sacar(cpf_usuario, saldo_usuario)
 
