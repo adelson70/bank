@@ -224,6 +224,7 @@ Digite: """
 
         if opcao in opcoes:
             if opcao == '0':
+                limpar_console()
                 break
 
             elif opcao == '1':
