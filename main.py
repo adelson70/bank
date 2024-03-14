@@ -4,14 +4,41 @@
 import sqlite3
 from os import system as sys
 from time import sleep
+from datetime import datetime
 
+# FUNÇÃO PARA CONSULTAR A DATA
+def consultar_data():
+    data = datetime.now()
+    dia = f'{data.day:02}'
+    mes = f'{data.month:02}'
+    ano = f'{data.year}'
+
+    data_formatada = f'{dia}/{mes}/{ano}'
+
+    return data()
+
+# FUNÇÃO PARA CONSULTAR O HORARIO
+def consultar_horario():
+    data = datetime.now()
+    hora = f'{data.hour:02}'
+    minuto = f'{data.minute:02}'
+    segundo = f'{data.second:02}'
+
+    horario_formatado = f'{hora}:{minuto}:{segundo}'
+
+    return horario_formatado
+    
+
+# FUNÇÃO DE ESPERA
 def esperar(tempo=3):
     sleep(tempo)
 
+# FUNÇÃO PARA LIMPAR A TELA DO CONSOLE
 def limpar_console():
     sys('cls')
 limpar_console()
 
+# FUNÇÃO PARA CRIAR CONEXÃO AO BANCO DE DADOS
 def conexao_banco():
     conexao = sqlite3.connect('bank.db')
     cursor = conexao.cursor()
@@ -39,6 +66,20 @@ CREATE TABLE IF NOT EXISTS conta(
                       FOREIGN KEY (id) REFERENCES pessoa(id),
                       FOREIGN KEY (cpf) REFERENCES pessoa(cpf)
 )
+""")
+# CRIA A TABELA DE EXTRATO SE NÃO EXISTIR
+    cursor.execute("""
+CREATE TABLE IF NOT EXISTS extrato(
+                   id INTEGER PRIMARY KEY,
+                   data DATE,
+                   horario DATETIME,
+                   cc VARCHAR(4),
+                   cpf VARCHAR(11),
+                   operacao VARCHAR(15),
+                   valor DECIMAL DEFAULT 0,
+                   obs VARCHAR(4),
+                   FOREIGN KEY (id) REFERENCES pessoa(id)
+                   )
 """)
     conexao.commit()
     saida = (conexao, cursor)
@@ -156,23 +197,26 @@ def sacar(cpf, saldo_atual):
 
 # FUNÇÃO PARA TRANSFERIR
 def transferir(cpf_envia, saldo_envia):
+    limpar_console()
     try:
         cpf_recebe = input('Digite o CPF vinculado a conta que ira receber o dinheiro: ')
         conexao, cursor = conexao_banco()
 
-        cursor.execute("""SELECT nome.pessoa, conta.cpf, saldo.conta 
+        cursor.execute("""SELECT pessoa.nome, conta.cpf, conta.saldo 
                        FROM conta 
                        JOIN pessoa ON conta.id = pessoa.id
-                       WHERE conta.cpf=?""",(cpf_recebe))
+                       WHERE conta.cpf=?""",(cpf_recebe,))
         
-        pessoa_recebe, _, saldo_recebe = cursor.fetchall()[0]
+        result = cursor.fetchall()[0]
+        pessoa_recebe, _, saldo_recebe = result
 
         msg = f"Quanto deseja enviar para conta de {pessoa_recebe.title()}? "
-        quantia_enviada = int(input())
+        quantia_enviada = int(input(msg))
         
         if quantia_enviada < 0:
             limpar_console()
             print('Digite uma quantia maior que zero!')
+            esperar()
 
         elif quantia_enviada == 0:
             limpar_console('Operação Cancelada')
@@ -250,12 +294,25 @@ Digite: """)
 
             if opcao == '0':
                 break
+
             elif opcao == '1':
                 depositar(cpf_usuario, saldo_usuario)
+
             elif opcao == '2':
-                transferir(cpf_usuario, saldo_usuario)
+                if saldo_usuario > 0:
+                    transferir(cpf_usuario, saldo_usuario)
+                else:
+                    limpar_console()
+                    print('Você não tem dinheiro na sua conta! Faça um deposito')
+                    esperar()
+
             elif opcao == '3':
-                sacar(cpf_usuario, saldo_usuario)
+                if saldo_usuario > 0:
+                    sacar(cpf_usuario, saldo_usuario)
+                else:
+                    limpar_console()
+                    print('Você não tem dinheiro na sua conta! Faça um deposito')
+                    esperar()
 
     except:
         limpar_console()
