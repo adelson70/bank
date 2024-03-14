@@ -98,11 +98,61 @@ def criar_conta():
         print('CPF não cadastrado no banco!')
         esperar()
 
-def depositar():
-    ...
+# FUNÇÃO PARA DEPOSITAR NA CONTA
+def depositar(cpf, saldo_atual):
+    limpar_console()
+    conexao, cursor = conexao_banco()
 
-def sacar():
-    ...
+    try:
+        quantia = int(input('Digite a quantia a ser depositada: '))
+        while quantia < 0:
+            limpar_console()
+            quantia = int(input('Valor Invalido! Digite a quantia a ser depositada: '))
+
+        novo_saldo = saldo_atual+quantia
+
+        cursor.execute("""
+                       UPDATE conta
+                       SET saldo=?
+                       WHERE cpf=?""",(novo_saldo, cpf))
+        conexao.commit()
+
+        limpar_console()
+        print(f'R${quantia:.2f} Depositados com Sucesso!')
+        esperar()
+
+    except:
+        limpar_console()
+        print('Digite apenas números!')
+        esperar()
+
+# FUNÇÃO PARA SACAR
+def sacar(cpf, saldo_atual):
+    limpar_console()
+    conexao, cursor = conexao_banco()
+
+    try:
+        quantia = int(input('Digite a quantia a ser sacada: '))
+        while quantia > saldo_atual:
+            limpar_console()
+            quantia = int(input('Você não possui essa quantia, digite um novo valor: '))
+
+        novo_saldo = saldo_atual-quantia
+
+        cursor.execute("""
+                       UPDATE conta
+                       SET saldo=?
+                       WHERE cpf=?""",(novo_saldo, cpf))
+        conexao.commit()
+
+        limpar_console()
+        print(f'R${quantia:.2f} Sacado com Sucesso!')
+        esperar()
+
+    except:
+        limpar_console()
+        print('Digite apenas números!')
+        esperar()
 
 def transferir():
     ...
@@ -116,17 +166,16 @@ def acessar_conta():
 
     conexao, cursor = conexao_banco()
     try:
-        cursor.execute("""SELECT pessoa.nome, pessoa.salario, conta.cpf, conta.saldo, conta.cc 
-                       FROM conta
-                       JOIN pessoa ON conta.id = pessoa.id 
-                       WHERE conta.id=? AND conta.cpf=? AND conta.senha=?""",(id, cpf, senha))
-        result = cursor.fetchall()[0]
-
-        nome_usuario, salario_usuario, cpf_usuario, saldo_usuario, cc_usuario = result
-
-        limpar_console()
         while True:
             limpar_console()
+            cursor.execute("""SELECT pessoa.nome, pessoa.salario, conta.cpf, conta.saldo, conta.cc 
+                        FROM conta
+                        JOIN pessoa ON conta.id = pessoa.id 
+                        WHERE conta.id=? AND conta.cpf=? AND conta.senha=?""",(id, cpf, senha))
+            result = cursor.fetchall()[0]
+
+            nome_usuario, salario_usuario, cpf_usuario, saldo_usuario, cc_usuario = result
+
             msg = (f"""
 Bem vindo {nome_usuario.title()}
 CPF: {cpf_usuario}
@@ -145,11 +194,11 @@ Digite: """)
             if opcao == '0':
                 break
             elif opcao == '1':
-                depositar()
+                depositar(cpf_usuario, saldo_usuario)
             elif opcao == '2':
                 transferir()
             elif opcao == '3':
-                sacar()
+                sacar(cpf_usuario, saldo_usuario)
 
     except:
         limpar_console()
