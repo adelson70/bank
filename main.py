@@ -48,6 +48,7 @@ conexao_banco()
 
 # FUNÇÃO PARA CRIAR USUARIO
 def criar_usuario():
+    limpar_console()
     nome = input('Digite seu nome completo: ')
     cpf = input('Digite apenas o números do seu cpf: ')
     dia_nascimento = int(input('Digite o dia do seu nascimento: '))
@@ -69,6 +70,7 @@ def criar_usuario():
 
 # FUNÇÃO PARA CRIAR CONTA
 def criar_conta():
+    limpar_console()
     cpf = input('Digite o CPF cadastrado: ')
     conexao, cursor = conexao_banco()
     cursor.execute('SELECT cpf FROM pessoa WHERE cpf=?',(cpf,))
@@ -102,7 +104,12 @@ def depositar():
 def sacar():
     ...
 
+def transferir():
+    ...
+
+# FUNÇÃO PARA ACESSAR A CONTA
 def acessar_conta():
+    limpar_console()
     id = input('Digite o ID da sua conta: ')
     cpf = input('Digite o CPF vinculado a conta: ')
     senha = input('Digite a senha da sua conta: ')
@@ -118,7 +125,31 @@ def acessar_conta():
         nome_usuario, salario_usuario, cpf_usuario, saldo_usuario, cc_usuario = result
 
         limpar_console()
-        print(f"Bem vindo {nome_usuario.title()}")
+        while True:
+            limpar_console()
+            msg = (f"""
+Bem vindo {nome_usuario.title()}
+CPF: {cpf_usuario}
+CC: {cc_usuario}
+
+Saldo: R${saldo_usuario:.2f}
+
+[1] - Depositar
+[2] - Transferir
+[3] - Sacar
+[0] - Sair
+
+Digite: """)
+            opcao = input(msg)
+
+            if opcao == '0':
+                break
+            elif opcao == '1':
+                depositar()
+            elif opcao == '2':
+                transferir()
+            elif opcao == '3':
+                sacar()
 
     except:
         limpar_console()
@@ -130,12 +161,12 @@ def main():
     while True:
         limpar_console()
         msg = """
-    [1] - Acessar Conta
-    [2] - Cadastrar CPF
-    [3] - Criar Conta
-    [0] - Sair
+[1] - Acessar Conta
+[2] - Cadastrar CPF
+[3] - Criar Conta
+[0] - Sair
 
-    Digite: """
+Digite: """
 
         opcoes = ['1','2','3','0']
 
