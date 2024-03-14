@@ -156,7 +156,63 @@ def sacar(cpf, saldo_atual):
 
 # FUNÇÃO PARA TRANSFERIR
 def transferir(cpf_envia, saldo_envia):
-    ...
+    try:
+        cpf_recebe = input('Digite o CPF vinculado a conta que ira receber o dinheiro: ')
+        conexao, cursor = conexao_banco()
+
+        cursor.execute("""SELECT nome.pessoa, conta.cpf, saldo.conta 
+                       FROM conta 
+                       JOIN pessoa ON conta.id = pessoa.id
+                       WHERE conta.cpf=?""",(cpf_recebe))
+        
+        pessoa_recebe, _, saldo_recebe = cursor.fetchall()[0]
+
+        msg = f"Quanto deseja enviar para conta de {pessoa_recebe.title()}? "
+        quantia_enviada = int(input())
+        
+        if quantia_enviada < 0:
+            limpar_console()
+            print('Digite uma quantia maior que zero!')
+
+        elif quantia_enviada == 0:
+            limpar_console('Operação Cancelada')
+            esperar()
+
+        elif quantia_enviada > saldo_envia:
+            limpar_console()
+            print('Você não tem essa quantia para enviar!')
+            esperar()
+
+        else:
+            novo_saldo_envia = saldo_envia-quantia_enviada
+            novo_saldo_recebe = saldo_recebe+quantia_enviada
+
+            cursor.execute("""
+                           UPDATE conta
+                           SET saldo=?
+                           WHERE cpf=?
+                           """,(novo_saldo_envia, cpf_envia))
+            
+            cursor.execute("""
+                           UPDATE conta
+                           SET saldo=?
+                           WHERE cpf=?
+                           """,(novo_saldo_recebe, cpf_recebe))
+            
+            limpar_console()
+            print(f'R${quantia_enviada:.2f} enviados para {pessoa_recebe.title()}')
+            esperar()
+
+            conexao.commit()
+
+    except ValueError:
+        print('Digite Apenas Números!')
+
+    except:
+        limpar_console()
+        print('CPF não vinculado a nenhuma conta!')
+        esperar()
+
 
 # FUNÇÃO PARA ACESSAR A CONTA
 def acessar_conta():
