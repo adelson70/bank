@@ -320,6 +320,10 @@ Digite: """)
         esperar()
         limpar_console()
 
+def extrato():
+
+    ...
+
 def main():
     while True:
         limpar_console()
