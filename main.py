@@ -1,42 +1,14 @@
 # Importando modulos
 # from user import Pessoa
 # from bank_account import Account
+
 import sqlite3
 from os import system as sys
 from time import sleep
 from datetime import datetime
-
-# FUNÇÃO PARA CONSULTAR A DATA
-def consultar_data():
-    data = datetime.now()
-    dia = f'{data.day:02}'
-    mes = f'{data.month:02}'
-    ano = f'{data.year}'
-
-    data_formatada = f'{dia}/{mes}/{ano}'
-
-    return data()
-
-# FUNÇÃO PARA CONSULTAR O HORARIO
-def consultar_horario():
-    data = datetime.now()
-    hora = f'{data.hour:02}'
-    minuto = f'{data.minute:02}'
-    segundo = f'{data.second:02}'
-
-    horario_formatado = f'{hora}:{minuto}:{segundo}'
-
-    return horario_formatado
-    
-
-# FUNÇÃO DE ESPERA
-def esperar(tempo=3):
-    sleep(tempo)
-
-# FUNÇÃO PARA LIMPAR A TELA DO CONSOLE
-def limpar_console():
-    sys('cls')
-limpar_console()
+from random import choices
+from random import shuffle
+from string import ascii_uppercase
 
 # FUNÇÃO PARA CRIAR CONEXÃO AO BANCO DE DADOS
 def conexao_banco():
@@ -70,7 +42,8 @@ CREATE TABLE IF NOT EXISTS conta(
 # CRIA A TABELA DE EXTRATO SE NÃO EXISTIR
     cursor.execute("""
 CREATE TABLE IF NOT EXISTS extrato(
-                   id INTEGER PRIMARY KEY,
+                   hash TEXT PRIMARY KEY,
+                   id INTEGER,
                    data DATE,
                    horario DATETIME,
                    cc VARCHAR(4),
@@ -86,6 +59,57 @@ CREATE TABLE IF NOT EXISTS extrato(
 
     return saida
 conexao_banco()
+
+# FUNÇÃO QUE GERA ID DE TRANSAÇÃO
+def gerar_hash():
+    # conexao, cursor = conexao_banco()
+    numeros = [str(n) for n in range(0,11)] 
+    letras = ascii_uppercase
+    conexao, cursor = conexao_banco()
+    
+    hash_gerado = choices(numeros,k=8) + choices(letras,k=12)
+    shuffle(hash_gerado)
+
+    id_transacao = "".join(hash_gerado)
+
+    # cursor.execute('SELECT hash FROM extrato WHERE hash=?',(id_transacao,))
+
+    # result = cursor.fetchone()
+    # print(result)
+
+    return id_transacao
+
+# FUNÇÃO PARA CONSULTAR A DATA
+def consultar_data():
+    data = datetime.now()
+    dia = f'{data.day:02}'
+    mes = f'{data.month:02}'
+    ano = f'{data.year}'
+
+    data_formatada = f'{dia}/{mes}/{ano}'
+
+    return data_formatada
+
+# FUNÇÃO PARA CONSULTAR O HORARIO
+def consultar_horario():
+    data = datetime.now()
+    hora = f'{data.hour:02}'
+    minuto = f'{data.minute:02}'
+    segundo = f'{data.second:02}'
+
+    horario_formatado = f'{hora}:{minuto}:{segundo}'
+
+    return horario_formatado
+    
+
+# FUNÇÃO DE ESPERA
+def esperar(tempo=3):
+    sleep(tempo)
+
+# FUNÇÃO PARA LIMPAR A TELA DO CONSOLE
+def limpar_console():
+    sys('cls')
+limpar_console()
 
 # FUNÇÃO PARA CRIAR USUARIO
 def criar_usuario():
@@ -140,7 +164,7 @@ def criar_conta():
         esperar()
 
 # FUNÇÃO PARA DEPOSITAR NA CONTA
-def depositar(cpf, saldo_atual):
+def depositar(cpf, saldo_atual, id, cc):
     limpar_console()
     conexao, cursor = conexao_banco()
 
@@ -160,6 +184,8 @@ def depositar(cpf, saldo_atual):
 
         limpar_console()
         print(f'R${quantia:.2f} Depositados com Sucesso!')
+
+        extrato(id_envia=id, cc_envia=cc, cpf_envia=cpf, valor=quantia, deposito=True)
         esperar()
 
     except:
@@ -168,7 +194,7 @@ def depositar(cpf, saldo_atual):
         esperar()
 
 # FUNÇÃO PARA SACAR
-def sacar(cpf, saldo_atual):
+def sacar(cpf, saldo_atual, id, cc):
     limpar_console()
     conexao, cursor = conexao_banco()
 
@@ -188,6 +214,7 @@ def sacar(cpf, saldo_atual):
 
         limpar_console()
         print(f'R${quantia:.2f} Sacado com Sucesso!')
+        extrato(id_envia=id, cc_envia=cc, cpf_envia=cpf, valor=quantia, saque=True)
         esperar()
 
     except:
@@ -196,19 +223,19 @@ def sacar(cpf, saldo_atual):
         esperar()
 
 # FUNÇÃO PARA TRANSFERIR
-def transferir(cpf_envia, saldo_envia):
+def transferir(cpf_envia, saldo_envia, cc_envia, id):
     limpar_console()
     try:
         cpf_recebe = input('Digite o CPF vinculado a conta que ira receber o dinheiro: ')
         conexao, cursor = conexao_banco()
 
-        cursor.execute("""SELECT pessoa.nome, conta.cpf, conta.saldo 
+        cursor.execute("""SELECT pessoa.nome, conta.cpf, conta.saldo, conta.cc 
                        FROM conta 
                        JOIN pessoa ON conta.id = pessoa.id
                        WHERE conta.cpf=?""",(cpf_recebe,))
         
         result = cursor.fetchall()[0]
-        pessoa_recebe, _, saldo_recebe = result
+        pessoa_recebe, _, saldo_recebe, cc_recebe = result
 
         msg = f"Quanto deseja enviar para conta de {pessoa_recebe.title()}? "
         quantia_enviada = int(input(msg))
@@ -287,6 +314,7 @@ Saldo: R${saldo_usuario:.2f}
 [1] - Depositar
 [2] - Transferir
 [3] - Sacar
+[4] - Extrato
 [0] - Sair
 
 Digite: """)
@@ -296,7 +324,7 @@ Digite: """)
                 break
 
             elif opcao == '1':
-                depositar(cpf_usuario, saldo_usuario)
+                depositar(cpf_usuario, saldo_usuario, id, cc_usuario)
 
             elif opcao == '2':
                 if saldo_usuario > 0:
@@ -308,21 +336,54 @@ Digite: """)
 
             elif opcao == '3':
                 if saldo_usuario > 0:
-                    sacar(cpf_usuario, saldo_usuario)
+                    sacar(cpf_usuario, saldo_usuario, id, cc_usuario)
                 else:
                     limpar_console()
                     print('Você não tem dinheiro na sua conta! Faça um deposito')
                     esperar()
+            
+            elif opcao =='4':
+                limpar_console()
+                extrato()
 
+            else:
+                limpar_console()
+                print('Opção Inválida!')
+                esperar()
     except:
         limpar_console()
         print('Conta não encontrada!')
         esperar()
         limpar_console()
 
-def extrato():
+def extrato(id_envia, cc_envia, cpf_envia, valor, cc_recebe=False, deposito=False,transferencia=False,saque=False):
+    conexao, cursor = conexao_banco()
+    id_transacao = gerar_hash()
+    data = consultar_data()
+    horario = consultar_horario()
+    id = id_envia
+    cc = cc_envia
+    cpf = cpf_envia
+    valor = valor
+    obs = None
 
-    ...
+    if deposito or saque:
+        if deposito:
+            operacao = 'DEPOSITO'
+        
+        elif saque:
+            operacao = 'SAQUE'
+        
+        cursor.execute(f"""INSERT INTO extrato (hash, id, data, horario, cc, cpf, operacao, valor, obs) 
+                    VALUES ('{id_transacao}',{id},'{data}', '{horario}', '{cc}','{cpf}' ,'{operacao}',{valor}, '{obs}')""")
+
+        conexao.commit()
+    
+    elif transferencia and cc_recebe != False:
+        operacao = 'TRANSFERENCIA'
+        obs = cc_recebe
+
+
 
 def main():
     while True:
