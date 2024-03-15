@@ -9,6 +9,7 @@ from datetime import datetime
 from random import choices
 from random import shuffle
 from string import ascii_uppercase
+import pandas as pd
 
 # FUNÇÃO PARA CRIAR CONEXÃO AO BANCO DE DADOS
 def conexao_banco():
@@ -71,11 +72,11 @@ def gerar_hash():
     shuffle(hash_gerado)
 
     id_transacao = "".join(hash_gerado)
+    cursor.execute('SELECT hash FROM extrato WHERE hash=?',(id_transacao,))
+    result = cursor.fetchone()
 
-    # cursor.execute('SELECT hash FROM extrato WHERE hash=?',(id_transacao,))
-
-    # result = cursor.fetchone()
-    # print(result)
+    while result != None:
+        return gerar_hash()
 
     return id_transacao
 
@@ -213,8 +214,8 @@ def sacar(cpf, saldo_atual, id, cc):
         conexao.commit()
 
         limpar_console()
-        print(f'R${quantia:.2f} Sacado com Sucesso!')
         extrato(id_envia=id, cc_envia=cc, cpf_envia=cpf, valor=quantia, saque=True)
+        print(f'R${quantia:.2f} Sacado com Sucesso!')
         esperar()
 
     except:
@@ -223,19 +224,19 @@ def sacar(cpf, saldo_atual, id, cc):
         esperar()
 
 # FUNÇÃO PARA TRANSFERIR
-def transferir(cpf_envia, saldo_envia, cc_envia, id):
+def transferir(cpf_env, saldo_envia, cc_env, id_env):
     limpar_console()
     try:
         cpf_recebe = input('Digite o CPF vinculado a conta que ira receber o dinheiro: ')
         conexao, cursor = conexao_banco()
 
-        cursor.execute("""SELECT pessoa.nome, conta.cpf, conta.saldo, conta.cc 
+        cursor.execute("""SELECT pessoa.nome, conta.cpf, conta.saldo, conta.cc, conta.cpf, pessoa.id 
                        FROM conta 
                        JOIN pessoa ON conta.id = pessoa.id
                        WHERE conta.cpf=?""",(cpf_recebe,))
         
         result = cursor.fetchall()[0]
-        pessoa_recebe, _, saldo_recebe, cc_recebe = result
+        pessoa_recebe, _, saldo_recebe, cc_receb, cpf_receb, id_receb = result
 
         msg = f"Quanto deseja enviar para conta de {pessoa_recebe.title()}? "
         quantia_enviada = int(input(msg))
@@ -262,24 +263,26 @@ def transferir(cpf_envia, saldo_envia, cc_envia, id):
                            UPDATE conta
                            SET saldo=?
                            WHERE cpf=?
-                           """,(novo_saldo_envia, cpf_envia))
+                           """,(novo_saldo_envia, cpf_env))
             
             cursor.execute("""
                            UPDATE conta
                            SET saldo=?
                            WHERE cpf=?
-                           """,(novo_saldo_recebe, cpf_recebe))
+                           """,(novo_saldo_recebe, cpf_receb))
+            
+            conexao.commit()
             
             limpar_console()
+            extrato(id_envia=id_env, cc_envia=cc_env, cpf_envia=cpf_env,valor=quantia_enviada,cc_recebe=cc_receb,cpf_recebe=cpf_receb,id_recebe=id_receb, transferencia=True)
             print(f'R${quantia_enviada:.2f} enviados para {pessoa_recebe.title()}')
             esperar()
 
-            conexao.commit()
 
     except ValueError:
         print('Digite Apenas Números!')
 
-    except:
+    except IndexError:
         limpar_console()
         print('CPF não vinculado a nenhuma conta!')
         esperar()
@@ -328,7 +331,7 @@ Digite: """)
 
             elif opcao == '2':
                 if saldo_usuario > 0:
-                    transferir(cpf_usuario, saldo_usuario)
+                    transferir(cpf_usuario, saldo_usuario,cc_usuario, id)
                 else:
                     limpar_console()
                     print('Você não tem dinheiro na sua conta! Faça um deposito')
@@ -344,19 +347,21 @@ Digite: """)
             
             elif opcao =='4':
                 limpar_console()
-                extrato()
+                gerar_extrato(id)
+                print(f'Extrato da conta de {nome_usuario.title()} gerado com sucesso!')
+                esperar()
 
             else:
                 limpar_console()
                 print('Opção Inválida!')
                 esperar()
-    except:
+    except IndexError:
         limpar_console()
         print('Conta não encontrada!')
         esperar()
         limpar_console()
 
-def extrato(id_envia, cc_envia, cpf_envia, valor, cc_recebe=False, deposito=False,transferencia=False,saque=False):
+def extrato(id_envia, cc_envia, cpf_envia, valor, cc_recebe=None,cpf_recebe=None, id_recebe=None, deposito=False,transferencia=False,saque=False):
     conexao, cursor = conexao_banco()
     id_transacao = gerar_hash()
     data = consultar_data()
@@ -379,9 +384,30 @@ def extrato(id_envia, cc_envia, cpf_envia, valor, cc_recebe=False, deposito=Fals
 
         conexao.commit()
     
-    elif transferencia and cc_recebe != False:
-        operacao = 'TRANSFERENCIA'
-        obs = cc_recebe
+    elif transferencia and cc_recebe != None:
+        operacao_envia, operacao_recebe = 'ENVIOU', 'RECEBEU'
+        obs_envia, obs_recebe = cc_recebe, cc_envia
+        id_envia, id_receb = id, id_recebe
+        cpf_envia, cpf_receb = cpf, cpf_recebe
+        id_transacao_envia = gerar_hash()
+        id_transacao_recebe = gerar_hash()
+        
+
+        # EXTRATO DE QUEM ENVIA
+        cursor.execute(f"""INSERT INTO extrato (hash, id, data, horario, cc, cpf, operacao, valor, obs) 
+            VALUES ('{id_transacao_envia}',{id_envia},'{data}', '{horario}', '{cc_envia}','{cpf_envia}' ,'{operacao_envia}',{valor}, '{obs_envia}')""")
+        
+        conexao.commit()
+
+        # EXTRATO DE QUEM RECEBE
+        cursor.execute(f"""INSERT INTO extrato (hash, id, data, horario, cc, cpf, operacao, valor, obs) 
+            VALUES ('{id_transacao_recebe}',{id_receb},'{data}', '{horario}', '{cc_recebe}','{cpf_receb}' ,'{operacao_recebe}',{valor}, '{obs_recebe}')""")
+        
+        conexao.commit()
+
+def gerar_extrato(id):
+    conexao, cursor = conexao_banco()
+
 
 
 
