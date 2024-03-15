@@ -10,6 +10,14 @@ from random import choices
 from random import shuffle
 from string import ascii_uppercase
 import pandas as pd
+import os
+
+
+def criar_diretorio(nome_diretorio):
+    # Verificar se o diretório existe
+    if not os.path.exists(nome_diretorio):
+        # Se não existir, criar o diretório
+        os.makedirs(nome_diretorio)
 
 # FUNÇÃO PARA CRIAR CONEXÃO AO BANCO DE DADOS
 def conexao_banco():
@@ -347,7 +355,7 @@ Digite: """)
             
             elif opcao =='4':
                 limpar_console()
-                gerar_extrato(id)
+                gerar_extrato(id, nome_usuario)
                 print(f'Extrato da conta de {nome_usuario.title()} gerado com sucesso!')
                 esperar()
 
@@ -405,10 +413,22 @@ def extrato(id_envia, cc_envia, cpf_envia, valor, cc_recebe=None,cpf_recebe=None
         
         conexao.commit()
 
-def gerar_extrato(id):
+def gerar_extrato(id,nome):
     conexao, cursor = conexao_banco()
+    horario = consultar_horario()
+    data = consultar_data()
+    nome_arquivo = nome.replace(" ","") + data.replace('/',"") + horario.replace(':',"") 
 
+    resultado = conexao.execute('SELECT * FROM extrato WHERE id=?',(id,))
+    linhas = resultado.fetchall()
+    colunas = [coluna[0] for coluna in resultado.description]
 
+    df = pd.DataFrame(linhas, columns=colunas)
+    conexao.close()
+
+    criar_diretorio('extratos')
+
+    df.to_excel(f'extratos/{nome_arquivo}.xlsx', index=False)
 
 
 def main():
